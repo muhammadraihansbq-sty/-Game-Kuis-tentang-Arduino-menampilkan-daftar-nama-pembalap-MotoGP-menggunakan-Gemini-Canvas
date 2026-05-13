@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoGP Arduino Quest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+        }
+
+        .card-animate {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .xp-bar {
+            height: 8px;
+            background: #334155;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .xp-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            transition: width 0.5s ease;
+        }
+
+        .option-btn {
+            background: rgba(51, 65, 85, 0.5);
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: #64748b;
+        }
+
+        .option-correct {
+            background: rgba(16, 185, 129, 0.2) !important;
+            border-color: #10b981 !important;
+        }
+
+        .option-wrong {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: #239, 68, 68 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-2xl">
+        <!-- Main Content injected here -->
+    </div>
+
+    <script>
+        const gameData = {
+            missions: [
+                {
+                    id: 1,
+                    title: "Dasar Infrared",
+                    questions: [
+                        { q: "Apa media yang digunakan remote IR untuk mengirim sinyal?", options: ["Sinar Laser", "Sinar Inframerah", "Gelombang Radio", "Kabel"], correct: 1 },
+                        { q: "Apa fungsi utama IR Receiver dalam projek Arduino?", options: ["Mengirim sinyal cahaya", "Mengubah cahaya jadi data digital", "Menyimpan baterai", "Menghubungkan ke Wi-Fi"], correct: 1 },
+                        { q: "Remote TV dan AC adalah contoh penggunaan teknologi...?", options: ["Bluetooth", "Infrared", "Ultrasonik", "RFID"], correct: 1 },
+                        { q: "Manakah urutan kerja sistem IR yang benar?", options: ["Arduino -> Remote -> Sensor", "Remote -> Sensor -> Arduino", "Sensor -> Remote -> Arduino", "Arduino -> Sensor -> Remote"], correct: 1 },
+                        { q: "IR Receiver mengirimkan data ke Arduino untuk...?", options: ["Dihapus", "Diproses menjadi aksi", "Dibuang", "Didinginkan"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Komponen & WOKWI",
+                    questions: [
+                        { q: "Pin mana yang digunakan sebagai RECV_PIN di modul?", options: ["Pin 13", "Pin 2", "Pin A0", "Pin 5"], correct: 1 },
+                        { q: "Website apa yang digunakan untuk simulasi online ini?", options: ["Tinkercad", "Arduino.cc", "WOKWI", "GitHub"], correct: 2 },
+                        { q: "Komponen apa yang menampilkan teks 16x2?", options: ["LED", "LCD I2C", "Potensiometer", "Buzzer"], correct: 1 },
+                        { q: "Apa fungsi kabel Jumper?", options: ["Menghubungkan antar komponen", "Sebagai hiasan", "Menghemat listrik", "Pemutus arus otomatis"], correct: 0 },
+                        { q: "Berapa jumlah LED yang digunakan dalam latihan awal?", options: ["1 LED", "2 LED", "3 LED", "4 LED"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 3,
+                    title: "Logika Tombol 1",
+                    questions: [
+                        { q: "Apa yang terjadi jika Tombol 1 ditekan pada latihan awal?", options: ["LED 2 menyala 1 detik", "LED 1 berkedip 4 kali", "LCD mati", "Sistem reset"], correct: 1 },
+                        { q: "Berapa jeda delay saat LED 1 berkedip?", options: ["100ms", "300ms", "500ms", "1000ms"], correct: 1 },
+                        { q: "Apa kode hexadecimal untuk CMD_KEY_1?", options: ["0x18", "0x30", "0xFF", "0x01"], correct: 1 },
+                        { q: "Pesan apa yang muncul di baris 1 LCD saat Tombol 1 ditekan?", options: ["Tombol 2 aktif", "Tombol 1 ditekan", "Sistem Siap", "Pembalap"], correct: 1 },
+                        { q: "Fungsi apa yang digunakan untuk mengulang kedipan?", options: ["if-else", "for loop", "while", "switch"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 4,
+                    title: "Logika Tombol 2",
+                    questions: [
+                        { q: "Apa aksi LED 2 saat tombol 2 ditekan?", options: ["Berkedip 2 kali", "Menyala selama 1 detik", "Mati permanen", "Berkedip cepat"], correct: 1 },
+                        { q: "Apa kode hexadecimal untuk CMD_KEY_2?", options: ["0x30", "0x18", "0x45", "0x22"], correct: 1 },
+                        { q: "Digital pin berapa yang mengontrol LED 2?", options: ["Pin 3", "Pin 5", "Pin 2", "Pin 4"], correct: 1 },
+                        { q: "Fungsi apa yang mematikan LED setelah 1 detik?", options: ["digitalWrite(LOW)", "analogRead()", "stop()", "finish()"], correct: 0 },
+                        { q: "Pesan apa yang muncul di baris 2 LCD untuk Tombol 2?", options: ["LED 1 berkedip", "LED 2 ON (1s)", "Sistem Error", "Cek Koneksi"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 5,
+                    title: "Teknologi LCD I2C",
+                    questions: [
+                        { q: "Apa kepanjangan dari LCD?", options: ["Light Crystal Display", "Liquid Crystal Display", "Low Color Device", "Linear Circuit Data"], correct: 1 },
+                        { q: "Mengapa menggunakan modul I2C pada LCD?", options: ["Biar lebih mahal", "Menghemat pin Arduino", "Agar layar lebih terang", "Biar cepat panas"], correct: 1 },
+                        { q: "Berapa alamat I2C umum yang disebutkan di modul?", options: ["0x00", "0x27", "0x99", "0x12"], correct: 1 },
+                        { q: "Fungsi apa untuk menghapus tampilan LCD?", options: ["lcd.delete()", "lcd.clear()", "lcd.reset()", "lcd.empty()"], correct: 1 },
+                        { q: "Perintah apa untuk menyalakan lampu latar LCD?", options: ["lcd.on()", "lcd.backlight()", "lcd.lightUp()", "lcd.shine()"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 6,
+                    title: "Coding Arduino",
+                    questions: [
+                        { q: "Library apa yang di-include untuk sensor IR?", options: ["WiFi.h", "IRremote.hpp", "Servo.h", "Stepper.h"], correct: 1 },
+                        { q: "Fungsi mana yang berjalan hanya satu kali?", options: ["void loop()", "void setup()", "void start()", "void main()"], correct: 1 },
+                        { q: "Baud rate Serial yang digunakan adalah?", options: ["115200", "9600", "4800", "19200"], correct: 1 },
+                        { q: "Perintah untuk membaca sinyal IR adalah?", options: ["IrReceiver.decode()", "digitalRead()", "analogRead()", "getSignal()"], correct: 0 },
+                        { q: "Perintah resume() pada IR digunakan untuk?", options: ["Mematikan sensor", "Menyiapkan sinyal berikutnya", "Mengulang program", "Mengunci tombol"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 7,
+                    title: "Data Pembalap (Part 1)",
+                    questions: [
+                        { q: "Siapa pembalap dari tim Ducati Lenovo?", options: ["Marc Marquez", "Francesco Bagnaia", "Fabio Quartararo", "Brad Binder"], correct: 1 },
+                        { q: "Siapa pembalap dari tim Repsol Honda?", options: ["Aleix Espargaro", "Marc Marquez", "Brad Binder", "Fabio Quartararo"], correct: 1 },
+                        { q: "Tim manakah Fabio Quartararo bernaung?", options: ["Aprilia Racing", "Monster Energy Yamaha", "Ducati Lenovo", "Repsol Honda"], correct: 1 },
+                        { q: "Tim Red Bull KTM memiliki pembalap bernama?", options: ["Brad Binder", "Jack Miller", "Joan Mir", "Maverick Vinales"], correct: 0 },
+                        { q: "Aleix Espargaro berasal dari tim?", options: ["Ducati", "Aprilia Racing", "Honda", "Yamaha"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 8,
+                    title: "Navigasi List",
+                    questions: [
+                        { q: "Pada tugas akhir, Tombol 1 berfungsi sebagai?", options: ["Previous/Mundur", "Next/Maju", "Stop", "Reset"], correct: 1 },
+                        { q: "Tombol 2 pada tugas akhir berfungsi sebagai?", options: ["Previous/Mundur", "Next/Maju", "Select", "Delete"], correct: 0 },
+                        { q: "Berapa total data pembalap yang harus digunakan?", options: ["3 Data", "5 Data", "10 Data", "1 Data"], correct: 1 },
+                        { q: "Struktur data apa yang digunakan untuk menyimpan list nama?", options: ["Integer", "Array", "Boolean", "Float"], correct: 1 },
+                        { q: "Jika menekan Next di data terakhir, idealnya ke mana?", options: ["Program error", "Kembali ke data pertama", "Berhenti", "Mati"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 9,
+                    title: "Troubleshooting",
+                    questions: [
+                        { q: "Jika LCD tidak muncul teks, apa yang mungkin salah?", options: ["Baterai remote habis", "Alamat I2C salah", "LED mati", "Kabel jumper warna merah"], correct: 1 },
+                        { q: "Kenapa IrReceiver perlu resume()?", options: ["Biar hemat baterai", "Agar bisa menerima sinyal baru", "Menghapus memori RAM", "Menyalakan lampu"], correct: 1 },
+                        { q: "Apa fungsi Serial Monitor di WOKWI?", options: ["Nonton Youtube", "Melihat data debug dari Arduino", "Mengubah kode", "Menghapus project"], correct: 1 },
+                        { q: "Simbol '0x' pada 0x30 menandakan bilangan apa?", options: ["Desimal", "Hexadecimal", "Biner", "Oktal"], correct: 1 },
+                        { q: "Apa fungsi pinMode(OUTPUT)?", options: ["Menerima input", "Menentukan pin sebagai keluaran", "Menghapus program", "Menyetel waktu"], correct: 1 }
+                    ]
+                },
+                {
+                    id: 10,
+                    title: "Final Exam",
+                    questions: [
+                        { q: "Misi utama projek terakhir adalah integrasi...?", options: ["Sensor Suhu", "Remote IR, LCD, & Daftar Pembalap", "Motor Stepper", "WiFi Cloud"], correct: 1 },
+                        { q: "Format subjek email pengumpulan tugas harus...?", options: ["Tugas Arduino", "Latihan Projek Arduino... MotoGP", "Nama Saya", "Wokwi Link"], correct: 1 },
+                        { q: "Output apa yang harus dikumpulkan?", options: ["Video saja", "Link Wokwi, SS, Kode, Penjelasan", "Alat fisik", "Foto selfie"], correct: 1 },
+                        { q: "Apa kriteria penilaian dengan poin tertinggi (30)?", options: ["Kerapihan", "Program berjalan", "Kreativitas", "Tampilan LCD"], correct: 1 },
+                        { q: "Guna simulasi online WOKWI adalah...?", options: ["Biar ga beli alat dulu", "Belajar merangkai virtual", "Praktis & bisa dishare link", "Semua benar"], correct: 3 }
+                    ]
+                }
+            ]
+        };
+
+        let gameState = {
+            playerName: "",
+            currentMission: 0,
+            currentQuestion: 0,
+            xp: 0,
+            streak: 0,
+            screen: "welcome" // welcome, login, map, quiz, summary
+        };
+
+        function render() {
+            const container = document.getElementById('game-container');
+            container.innerHTML = "";
+
+            if (gameState.screen === "welcome") {
+                container.innerHTML = `
+                    <div class="glass p-8 rounded-3xl text-center card-animate">
+                        <h1 class="text-4xl font-bold font-orbitron mb-4 text-blue-400">WELCOME TRAINEE!</h1>
+                        <p class="text-xl mb-8 text-slate-300">Selamat datang di Simulator Pelatihan Arduino & MotoGP. Siapkah kamu menjadi Master Embedded System?</p>
+                        <div class="space-y-4">
+                            <button onclick="changeScreen('login')" class="btn-primary px-10 py-4 rounded-full text-xl font-bold w-full">MULAI PETUALANGAN</button>
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (gameState.screen === "login") {
+                container.innerHTML = `
+                    <div class="glass p-8 rounded-3xl card-animate">
+                        <h2 class="text-2xl font-bold font-orbitron mb-6 text-center">IDENTITAS PEMBALAP</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-slate-400 mb-2">Masukkan Nama Kamu:</label>
+                                <input type="text" id="nameInput" class="w-full bg-slate-800 border border-slate-700 p-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white" placeholder="Contoh: Francesco Bagnaia Jr.">
+                            </div>
+                            <button onclick="saveName()" class="btn-primary px-10 py-4 rounded-full text-xl font-bold w-full">KONFIRMASI</button>
+                        </div>
+                    </div>
+                `;
+            }
+            else if (gameState.screen === "map") {
+                container.innerHTML = `
+                    <div class="glass p-6 rounded-3xl card-animate">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-blue-400">${gameState.playerName}</h2>
+                                <p class="text-sm text-slate-400">Level: ${Math.floor(gameState.xp / 500) + 1}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-orbitron text-yellow-400">${gameState.xp} XP</p>
+                                <div class="xp-bar w-32 mt-1">
+                                    <div class="xp-progress" style="width: ${(gameState.xp % 500) / 5}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold mb-4">DAFTAR MISI</h3>
+                        <div class="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto pr-2">
+                            ${gameData.missions.map((m, index) => `
+                                <div class="p-4 rounded-xl border ${index <= gameState.currentMission ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 opacity-50'} flex justify-between items-center">
+                                    <div>
+                                        <span class="text-xs font-bold text-blue-400">MISI ${m.id}</span>
+                                        <h4 class="font-bold">${m.title}</h4>
+                                    </div>
+                                    ${index < gameState.currentMission ? 
+                                        '<span class="text-green-400">✔️ LULUS</span>' : 
+                                        index === gameState.currentMission ? 
+                                        `<button onclick="startMission(${index})" class="bg-blue-600 px-4 py-2 rounded-lg text-sm font-bold">MAINKAN</button>` : 
+                                        '<span>🔒 TERKUNCI</span>'
+                                    }
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            else if (gameState.screen === "quiz") {
+                const mission = gameData.missions[gameState.currentMission];
+                const question = mission.questions[gameState.currentQuestion];
+                const progress = ((gameState.currentQuestion) / mission.questions.length) * 100;
+
+                container.innerHTML = `
+                    <div class="glass p-6 rounded-3xl card-animate">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm font-bold text-blue-400">MISI ${mission.id}: ${mission.title}</span>
+                            <span class="text-sm text-slate-400">Soal ${gameState.currentQuestion + 1}/${mission.questions.length}</span>
+                        </div>
+                        <div class="xp-bar mb-6">
+                            <div class="xp-progress" style="width: ${progress}%"></div>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-8 text-center">${question.q}</h3>
+                        <div class="grid grid-cols-1 gap-4">
+                            ${question.options.map((opt, i) => `
+                                <button onclick="checkAnswer(${i})" class="option-btn p-4 rounded-xl text-left font-medium">
+                                    ${opt}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            else if (gameState.screen === "summary") {
+                container.innerHTML = `
+                    <div class="glass p-8 rounded-3xl text-center card-animate">
+                        <div class="mb-6">
+                            <div class="inline-block p-4 rounded-full bg-yellow-500/20 mb-4">
+                                <svg class="w-12 h-12 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                            </div>
+                            <h2 class="text-3xl font-bold font-orbitron text-blue-400">MISI SELESAI!</h2>
+                            <p class="text-slate-400 mt-2">Kerja bagus, ${gameState.playerName}!</p>
+                        </div>
+                        <div class="flex justify-center gap-8 mb-8">
+                            <div class="text-center">
+                                <p class="text-sm text-slate-500">XP DIDAPAT</p>
+                                <p class="text-3xl font-bold text-yellow-400">+250</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-slate-500">TOTAL XP</p>
+                                <p class="text-3xl font-bold text-white">${gameState.xp}</p>
+                            </div>
+                        </div>
+                        <button onclick="gameState.currentMission++; changeScreen('map')" class="btn-primary px-10 py-4 rounded-full text-xl font-bold w-full">KE DAFTAR MISI</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Logic Functions
+        function changeScreen(screen) {
+            gameState.screen = screen;
+            render();
+        }
+
+        function saveName() {
+            const input = document.getElementById('nameInput');
+            if (input.value.trim().length < 3) {
+                alert("Nama terlalu pendek, minimal 3 karakter!");
+                return;
+            }
+            gameState.playerName = input.value;
+            changeScreen('map');
+        }
+
+        function startMission(index) {
+            gameState.currentMission = index;
+            gameState.currentQuestion = 0;
+            changeScreen('quiz');
+        }
+
+        function checkAnswer(selectedIndex) {
+            const mission = gameData.missions[gameState.currentMission];
+            const question = mission.questions[gameState.currentQuestion];
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            // Disable buttons
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === question.correct) {
+                buttons[selectedIndex].classList.add('option-correct');
+                gameState.xp += 50;
+                gameState.streak++;
+            } else {
+                buttons[selectedIndex].classList.add('option-wrong');
+                buttons[question.correct].classList.add('option-correct');
+                gameState.streak = 0;
+            }
+
+            setTimeout(() => {
+                if (gameState.currentQuestion < mission.questions.length - 1) {
+                    gameState.currentQuestion++;
+                    render();
+                } else {
+                    changeScreen('summary');
+                }
+            }, 1200);
+        }
+
+        // Initial Load
+        render();
+    </script>
+</body>
+</html>
